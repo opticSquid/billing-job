@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  database:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=PkNLm@#2357
+      - POSTGRES_DB=vendors
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgresData:/var/lib/postgresql/data
+      - ./init.sql://docker-entrypoint-initdb.d/init.sql:ro
+volumes:
+  postgresData:
+    driver: local
