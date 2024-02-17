@@ -27,7 +27,8 @@ class BillingJobApplicationTests {
 	@Test
 	void testJobExecution(CapturedOutput output) throws Exception {
 		// given
-		JobParameters jobParameters = new JobParametersBuilder().addString("input.file", "some.txt").toJobParameters();
+		JobParameters jobParameters = new JobParametersBuilder().addString("input.file", "some.txt")
+				.addString("other.param", "hello", false).toJobParameters();
 
 		// when
 		JobExecution jobExecution = this.jobLauncher.run(this.job, jobParameters);
