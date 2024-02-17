@@ -1,5 +1,7 @@
 package example.billingjob.billingjob.jobs;
 
+import java.time.LocalDateTime;
+
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Job;
@@ -20,14 +22,11 @@ public class BillingJob implements Job {
 
     @Override
     public void execute(JobExecution execution) {
-        try {
-            throw new Exception("Unable to process billing information");
-        } catch (Exception exception) {
-            execution.addFailureException(exception);
-            execution.setStatus(BatchStatus.COMPLETED);
-            execution.setExitStatus(ExitStatus.FAILED.addExitDescription(exception.getMessage()));
-        } finally {
-            this.jobRepository.update(execution);
-        }
+        execution.setStartTime(LocalDateTime.now());
+        System.out.println("processing billing information");
+        execution.setStatus(BatchStatus.COMPLETED);
+        execution.setExitStatus(ExitStatus.COMPLETED);
+        execution.setEndTime(LocalDateTime.now());
+        this.jobRepository.update(execution);
     }
 }
