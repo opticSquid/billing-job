@@ -17,6 +17,7 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
+import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ import org.springframework.jdbc.support.JdbcTransactionManager;
 import example.billingjob.billingjob.entity.BillingData;
 import example.billingjob.billingjob.entity.ReportingData;
 import example.billingjob.billingjob.jobs.tasks.BillingDataProcessor;
+import example.billingjob.billingjob.jobs.tasks.BillingDataSkipListener;
 import example.billingjob.billingjob.jobs.tasks.FilePreparationTasklet;
 
 @Configuration
@@ -50,11 +52,23 @@ public class BillingJobConfiguration {
 
         @Bean
         Step step2(JobRepository jobRepository, JdbcTransactionManager transactionManager,
-                        ItemReader<BillingData> billingDataFileReader, ItemWriter<BillingData> billingDataTableWriter) {
+                        ItemReader<BillingData> billingDataFileReader, ItemWriter<BillingData> billingDataTableWriter,
+                        BillingDataSkipListener skipListener) {
                 return new StepBuilder("fileIngestion", jobRepository)
                                 .<BillingData, BillingData>chunk(100, transactionManager)
                                 .reader(billingDataFileReader)
                                 .writer(billingDataTableWriter)
+                                // if error occours handles it
+                                .faultTolerant()
+                                // skip the current item(in this case current row in the file) when this
+                                // exception occours
+                                .skip(FlatFileParseException.class)
+                                // if skips are larger than 10 fail the whole job
+                                // this means there is some inherent flaw that needs deeper analysis
+                                .skipLimit(10)
+                                // this listner listens for skips and does operations on them
+                                // in this case writes them to a specific file
+                                .listener(skipListener)
                                 .build();
         }
 
@@ -135,5 +149,11 @@ public class BillingJobConfiguration {
                                                 "billingData.callDuration",
                                                 "billingData.smsCount", "billingTotal")
                                 .build();
+        }
+
+        @Bean
+        @StepScope
+        BillingDataSkipListener skipListener(@Value("#{jobParameters['skip.file']}") String skippedFile) {
+                return new BillingDataSkipListener(skippedFile);
         }
 }
