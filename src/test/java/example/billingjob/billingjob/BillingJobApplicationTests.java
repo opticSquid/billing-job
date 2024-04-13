@@ -1,14 +1,16 @@
 package example.billingjob.billingjob;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.batch.core.ExitStatus;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -19,23 +21,20 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 class BillingJobApplicationTests {
 
 	@Autowired
-	private Job job;
-
-	@Autowired
-	private JobLauncher jobLauncher;
+	private JobLauncherTestUtils jobLauncherTestUtils;
 
 	@Test
 	void testJobExecution(CapturedOutput output) throws Exception {
 		// given
 		JobParameters jobParameters = new JobParametersBuilder().addString("input.file", "some.txt")
-				.addString("other.param", "hello", false).toJobParameters();
+				.addString("input.file", "src/main/resources/billing-2023-01.csv").toJobParameters();
 
 		// when
-		JobExecution jobExecution = this.jobLauncher.run(this.job, jobParameters);
+		JobExecution jobExecution = this.jobLauncherTestUtils.launchJob(jobParameters);
 
 		// then
-		Assertions.assertTrue(output.getOut().contains("processing billing information of file: some.txt"));
 		Assertions.assertEquals(ExitStatus.COMPLETED, jobExecution.getExitStatus());
+		Assertions.assertTrue(Files.exists(Paths.get("staging", "billing-2023-01.csv")));
 	}
 
 }
