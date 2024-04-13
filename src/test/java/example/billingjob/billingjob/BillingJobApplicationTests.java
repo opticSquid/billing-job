@@ -1,6 +1,7 @@
 package example.billingjob.billingjob;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Assertions;
@@ -43,8 +44,12 @@ class BillingJobApplicationTests {
 	void testJobExecution() throws Exception {
 		// given
 		JobParameters jobParameters = new JobParametersBuilder()
-				.addString("input.file", "src/main/resources/billing-2023-01.csv")
+				.addString("input.file", "input/billing-2023-01.csv")
+				.addString("output.file", "staging/billing-report-2023-01.csv")
+				.addJobParameter("data.year", 2023, Integer.class)
+				.addJobParameter("data.month", 1, Integer.class)
 				.toJobParameters();
+		Path billingReport = Paths.get("staging", "billing-report-2023-01.csv");
 
 		// when
 		JobExecution jobExecution = this.jobLauncherTestUtils.launchJob(jobParameters);
@@ -54,6 +59,10 @@ class BillingJobApplicationTests {
 		Assertions.assertTrue(Files.exists(Paths.get("staging", "billing-2023-01.csv")));
 		// check in db if the table contains 1000 rows
 		Assertions.assertEquals(1000, JdbcTestUtils.countRowsInTable(jdbcTemplate, "BILLING_DATA"));
+		// checks if the report is generated
+		Assertions.assertTrue(Files.exists(billingReport));
+		// checks the number of rows in csv file
+		Assertions.assertEquals(781, Files.lines(billingReport).count());
 	}
 
 }

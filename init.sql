@@ -65,6 +65,16 @@ CREATE TABLE BATCH_JOB_EXECUTION_CONTEXT  (
     constraint JOB_EXEC_CTX_FK foreign key (JOB_EXECUTION_ID)
     references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
 ) ;
+CREATE TABLE IF NOT EXISTS public.billing_data
+(
+    data_year integer,
+    data_month integer,
+    account_id integer,
+    phone_number character varying(12) COLLATE pg_catalog."default",
+    data_usage double precision,
+    call_duration integer,
+    sms_count integer
+);
 CREATE SEQUENCE BATCH_STEP_EXECUTION_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
 CREATE SEQUENCE BATCH_JOB_EXECUTION_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
 CREATE SEQUENCE BATCH_JOB_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
