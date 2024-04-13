@@ -32,6 +32,8 @@ import example.billingjob.billingjob.entity.ReportingData;
 import example.billingjob.billingjob.jobs.tasks.BillingDataProcessor;
 import example.billingjob.billingjob.jobs.tasks.BillingDataSkipListener;
 import example.billingjob.billingjob.jobs.tasks.FilePreparationTasklet;
+import example.billingjob.billingjob.jobs.tasks.PricingException;
+import example.billingjob.billingjob.jobs.tasks.PricingService;
 
 @Configuration
 public class BillingJobConfiguration {
@@ -82,6 +84,12 @@ public class BillingJobConfiguration {
                                 .reader(billingDataTableReader)
                                 .processor(billingDataProcessor)
                                 .writer(billingDataFileWriter)
+                                // makes the step tolerate an error
+                                .faultTolerant()
+                                // in case of error of type PricingExceptio retry
+                                .retry(PricingException.class)
+                                // retry maximum 100 times no more than that
+                                .retryLimit(100)
                                 .build();
         }
 
@@ -132,8 +140,8 @@ public class BillingJobConfiguration {
         }
 
         @Bean
-        BillingDataProcessor billingDataProcessor() {
-                return new BillingDataProcessor();
+        BillingDataProcessor billingDataProcessor(PricingService pricingService) {
+                return new BillingDataProcessor(pricingService);
         }
 
         @Bean
@@ -155,5 +163,10 @@ public class BillingJobConfiguration {
         @StepScope
         BillingDataSkipListener skipListener(@Value("#{jobParameters['skip.file']}") String skippedFile) {
                 return new BillingDataSkipListener(skippedFile);
+        }
+
+        @Bean
+        PricingService pricingService() {
+                return new PricingService();
         }
 }
