@@ -1,11 +1,17 @@
 package example.billingjob.billingjob.config;
 
+import java.util.Date;
+
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecutionException;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
@@ -20,12 +26,14 @@ import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.support.JdbcTransactionManager;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import example.billingjob.billingjob.entity.BillingData;
 import example.billingjob.billingjob.entity.ReportingData;
@@ -37,6 +45,9 @@ import example.billingjob.billingjob.jobs.tasks.PricingService;
 
 @Configuration
 public class BillingJobConfiguration {
+        @Autowired
+        private JobLauncher jobLauncher;
+
         @Bean
         Job job(JobRepository jobRepository, Step step1, Step step2, Step step3) {
                 return new JobBuilder("BillingJob", jobRepository)
@@ -168,5 +179,17 @@ public class BillingJobConfiguration {
         @Bean
         PricingService pricingService() {
                 return new PricingService();
+        }
+
+        /**
+         * scheduling the job to run at mid night once per day
+         * 
+         * @param job
+         * @throws JobExecutionException
+         * @throws JobParametersInvalidException
+         */
+        @Scheduled(cron = "0 0 0 * * ?") // Run at midnight every day
+        void runDailyJob(Job job) throws JobExecutionException, JobParametersInvalidException {
+                jobLauncher.run(job, new JobParametersBuilder().addDate("runDate", new Date()).toJobParameters());
         }
 }
